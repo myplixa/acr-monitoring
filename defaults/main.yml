@@ -45,6 +45,8 @@ acr_monitoring_grafana_datasource_prometheus_alt_uid: "ef4s443shfcw0a"
 acr_monitoring_grafana_datasource_loki_uid: "cfghiyx26fzlsb"
 
 acr_monitoring_caddy_local_certs: true
+acr_monitoring_caddy_cert_file: ""
+acr_monitoring_caddy_key_file: ""
 
 acr_monitoring_alloy_run_as_root: false
 

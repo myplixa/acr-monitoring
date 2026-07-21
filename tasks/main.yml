@@ -28,6 +28,16 @@
     - acr_monitoring_install_stack | bool
     - not acr_monitoring_allow_insecure_defaults | bool
 
+- name: Refuse mismatched custom Caddy certificate/key
+  ansible.builtin.assert:
+    that: (acr_monitoring_caddy_cert_file | length > 0) == (acr_monitoring_caddy_key_file | length > 0)
+    fail_msg: >-
+      acr_monitoring_caddy_cert_file and acr_monitoring_caddy_key_file must
+      both be set, or both left empty.
+  when:
+    - acr_monitoring_install_stack | bool
+    - acr_monitoring_enable_caddy | bool
+
 - name: Verify Docker is installed and usable
   ansible.builtin.include_tasks: preflight.yml
   when: acr_monitoring_install_stack | bool

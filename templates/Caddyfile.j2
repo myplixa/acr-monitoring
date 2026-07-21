@@ -13,6 +13,8 @@
 {{ acr_monitoring_domain }} {
 {% if acr_monitoring_caddy_local_certs %}
   tls internal
+{% elif acr_monitoring_caddy_cert_file and acr_monitoring_caddy_key_file %}
+  tls /certs/cert.pem /certs/key.pem
 {% endif %}
 
   handle /loki* {

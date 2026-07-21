@@ -146,7 +146,16 @@ when to change it.
 
 | Variable | Default | Description |
 |---|---|---|
-| `acr_monitoring_caddy_local_certs` | `true` | Use Caddy's internal CA (self-signed). Set `false` once you have real DNS/certs. |
+| `acr_monitoring_caddy_local_certs` | `true` | `true` = Caddy issues a self-signed cert from its own internal CA (browsers will warn). Set `false` for one of two things: if `acr_monitoring_caddy_cert_file`/`_key_file` are also set, Caddy uses that certificate; otherwise it requests one from Let's Encrypt automatically — see below. |
+| `acr_monitoring_caddy_cert_file` | `""` | Path, on the Ansible control node, to a certificate (fullchain) file to install and use instead of Let's Encrypt. Only takes effect when `acr_monitoring_caddy_local_certs: false`. Must be set together with `acr_monitoring_caddy_key_file` — the role refuses to deploy if only one is set. |
+| `acr_monitoring_caddy_key_file` | `""` | Path, on the Ansible control node, to the private key matching `acr_monitoring_caddy_cert_file`. |
+
+With `acr_monitoring_caddy_local_certs: false` and no cert/key set, `acr_monitoring_domain`
+must be a real, publicly resolvable domain pointing at this host, with ports
+80/443 reachable from the internet for the ACME challenge. With a cert/key
+pair set, the role copies both files to `{{ acr_monitoring_base_dir }}/caddy/certs/`
+on the target host (private key at mode `0600`) and points Caddy's `tls`
+directive at them — no domain reachability requirement in that case.
 
 ### Alloy (host agent)
 

@@ -13,6 +13,42 @@
     mode: "0644"
   notify: Restart monitoring stack
 
+- name: Create the Caddy certs directory
+  ansible.builtin.file:
+    path: "{{ acr_monitoring_base_dir }}/caddy/certs"
+    state: directory
+    mode: "0755"
+  when:
+    - acr_monitoring_enable_caddy | bool
+    - not acr_monitoring_caddy_local_certs | bool
+    - acr_monitoring_caddy_cert_file
+    - acr_monitoring_caddy_key_file
+
+- name: Deploy the custom Caddy certificate
+  ansible.builtin.copy:
+    src: "{{ acr_monitoring_caddy_cert_file }}"
+    dest: "{{ acr_monitoring_base_dir }}/caddy/certs/cert.pem"
+    mode: "0644"
+  when:
+    - acr_monitoring_enable_caddy | bool
+    - not acr_monitoring_caddy_local_certs | bool
+    - acr_monitoring_caddy_cert_file
+    - acr_monitoring_caddy_key_file
+  notify: Restart monitoring stack
+
+- name: Deploy the custom Caddy private key
+  ansible.builtin.copy:
+    src: "{{ acr_monitoring_caddy_key_file }}"
+    dest: "{{ acr_monitoring_base_dir }}/caddy/certs/key.pem"
+    mode: "0600"
+  no_log: true
+  when:
+    - acr_monitoring_enable_caddy | bool
+    - not acr_monitoring_caddy_local_certs | bool
+    - acr_monitoring_caddy_cert_file
+    - acr_monitoring_caddy_key_file
+  notify: Restart monitoring stack
+
 - name: Render Caddyfile
   ansible.builtin.template:
     src: Caddyfile.j2

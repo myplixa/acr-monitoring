@@ -13,6 +13,9 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./caddy/data:/data
       - ./caddy/config:/config
+{% if not acr_monitoring_caddy_local_certs and acr_monitoring_caddy_cert_file and acr_monitoring_caddy_key_file %}
+      - ./caddy/certs:/certs:ro
+{% endif %}
     networks:
       - monitoring
     depends_on:
