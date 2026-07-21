@@ -1,0 +1,99 @@
+{{ ansible_managed | comment }}
+services:
+{% if acr_monitoring_enable_caddy %}
+
+  caddy:
+    image: "{{ acr_monitoring_caddy_image }}:{{ acr_monitoring_caddy_version }}"
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/data:/data
+      - ./caddy/config:/config
+    networks:
+      - monitoring
+    depends_on:
+      - grafana
+      - prometheus
+      - loki
+{% endif %}
+
+  grafana:
+    image: "{{ acr_monitoring_grafana_image }}:{{ acr_monitoring_grafana_version }}"
+    container_name: grafana
+    restart: always
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+{% if acr_monitoring_grafana_dashboards %}
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+{% endif %}
+    environment:
+      TZ: "{{ acr_monitoring_timezone }}"
+      GF_SECURITY_ADMIN_USER: "{{ acr_monitoring_grafana_admin_user }}"
+      GF_SECURITY_ADMIN_PASSWORD: "{{ acr_monitoring_grafana_admin_password }}"
+{% if acr_monitoring_enable_caddy %}
+    expose:
+      - "3000"
+{% else %}
+    ports:
+      - "3000:3000"
+{% endif %}
+    networks:
+      - monitoring
+
+  prometheus:
+    image: "{{ acr_monitoring_prometheus_image }}:{{ acr_monitoring_prometheus_version }}"
+    container_name: prometheus
+    restart: always
+    environment:
+      TZ: "{{ acr_monitoring_timezone }}"
+    command:
+{% if acr_monitoring_enable_caddy %}
+      - "--web.external-url=http://{{ acr_monitoring_domain }}/prometheus"
+      - "--web.route-prefix=/"
+{% endif %}
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time={{ acr_monitoring_prometheus_retention_time }}"
+      - "--storage.tsdb.retention.size={{ acr_monitoring_prometheus_retention_size }}"
+{% if acr_monitoring_prometheus_enable_remote_write_receiver %}
+      - "--web.enable-remote-write-receiver"
+{% endif %}
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    expose:
+      - "9090"
+    networks:
+      - monitoring
+
+  loki:
+    image: "{{ acr_monitoring_loki_image }}:{{ acr_monitoring_loki_version }}"
+    container_name: loki
+    restart: always
+    user: "{{ acr_monitoring_loki_uid }}:{{ acr_monitoring_loki_gid }}"
+    ports:
+      - "127.0.0.1:3100:3100"
+    expose:
+      - "3100"
+    environment:
+      TZ: "{{ acr_monitoring_timezone }}"
+    command:
+      - "--config.file=/etc/loki/local-config.yaml"
+      - "--config.expand-env=true"
+    volumes:
+      - ./loki/loki.yml:/etc/loki/local-config.yaml:ro
+      - ./loki/data:/loki
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge

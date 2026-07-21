@@ -1,0 +1,6 @@
+---
+roles:
+  - name: acr_monitoring
+    src: https://github.com/myplixa/acr-monitoring.git
+    scm: git
+    version: main

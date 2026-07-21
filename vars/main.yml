@@ -1,0 +1,9 @@
+---
+acr_monitoring_dirs:
+  - "{{ acr_monitoring_base_dir }}"
+  - "{{ acr_monitoring_base_dir }}/caddy/data"
+  - "{{ acr_monitoring_base_dir }}/caddy/config"
+
+acr_monitoring_alloy_deb_name: "alloy-{{ acr_monitoring_alloy_version }}-1.{{ acr_monitoring_alloy_arch }}.deb"
+acr_monitoring_alloy_download_url: >-
+  https://github.com/grafana/alloy/releases/download/v{{ acr_monitoring_alloy_version }}/{{ acr_monitoring_alloy_deb_name }}

@@ -1,0 +1,171 @@
+// {{ ansible_managed }}
+
+logging {
+  level = "info"
+}
+
+// VM METRICS //
+
+prometheus.exporter.unix "node" {
+  include_exporter_metrics = true
+
+{% if acr_monitoring_alloy_monitor_docker %}
+  textfile {
+    directory = "{{ acr_monitoring_alloy_textfile_dir }}"
+  }
+{% endif %}
+}
+
+discovery.relabel "node" {
+  targets = prometheus.exporter.unix.node.targets
+
+  rule {
+    action       = "replace"
+    target_label = "job"
+    replacement  = "node"
+  }
+}
+
+prometheus.scrape "node" {
+  targets         = discovery.relabel.node.output
+  forward_to      = [prometheus.remote_write.metrics.receiver]
+  scrape_interval = "30s"
+}
+
+{% if acr_monitoring_alloy_monitor_docker %}
+// DOCKER METRICS (cAdvisor) //
+
+prometheus.exporter.cadvisor "docker" {
+  docker_host            = "unix:///var/run/docker.sock"
+  store_container_labels = false
+}
+
+discovery.relabel "cadvisor" {
+  targets = prometheus.exporter.cadvisor.docker.targets
+
+  rule {
+    action       = "replace"
+    target_label = "job"
+    replacement  = "cadvisor"
+  }
+
+  rule {
+    action = "labeldrop"
+    regex  = "container_label_.*"
+  }
+}
+
+prometheus.scrape "cadvisor" {
+  targets         = discovery.relabel.cadvisor.output
+  forward_to      = [prometheus.remote_write.metrics.receiver]
+  scrape_interval = "30s"
+}
+{% endif %}
+
+// FILE LOGS //
+
+local.file_match "vm_logs" {
+  path_targets = [
+{% for entry in acr_monitoring_alloy_extra_log_paths %}
+    { __path__ = "{{ entry.path }}", job = "{{ entry.job }}" },
+{% endfor %}
+  ]
+  sync_period = "10s"
+}
+
+loki.source.file "vm_logs" {
+  targets    = local.file_match.vm_logs.targets
+  forward_to = [loki.write.local.receiver]
+}
+
+// JOURNAL LOGS //
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    action       = "replace"
+    target_label = "job"
+    replacement  = "journal"
+  }
+}
+
+loki.source.journal "journal" {
+  forward_to    = [loki.write.local.receiver]
+  relabel_rules = loki.relabel.journal.rules
+  max_age       = "12h"
+}
+
+{% if acr_monitoring_alloy_monitor_docker %}
+// DOCKER LOGS //
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+loki.relabel "docker" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "container"
+    regex         = "/(.*)"
+    replacement   = "$1"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+
+  rule {
+    action       = "replace"
+    target_label = "job"
+    replacement  = "docker"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.containers.targets
+  forward_to    = [loki.write.local.receiver]
+  relabel_rules = loki.relabel.docker.rules
+}
+{% endif %}
+
+// ENDPOINTS //
+
+prometheus.remote_write "metrics" {
+  endpoint {
+    url = "{{ (acr_monitoring_alloy_remote_write_url | regex_replace('/$', '') + '/prometheus/api/v1/write') if acr_monitoring_alloy_remote_write_url else 'http://127.0.0.1:9090/api/v1/write' }}"
+{% if acr_monitoring_alloy_remote_write_url %}
+    tls_config {
+      insecure_skip_verify = {{ acr_monitoring_alloy_remote_write_insecure_skip_verify | lower }}
+    }
+{% endif %}
+  }
+  external_labels = {
+    poligon  = "{{ acr_monitoring_alloy_poligon_label }}",
+    instance = constants.hostname,
+  }
+}
+
+loki.write "local" {
+  endpoint {
+    url = "{{ (acr_monitoring_alloy_remote_write_url | regex_replace('/$', '') + '/loki/api/v1/push') if acr_monitoring_alloy_remote_write_url else 'http://127.0.0.1:3100/loki/api/v1/push' }}"
+{% if acr_monitoring_alloy_remote_write_url %}
+    tls_config {
+      insecure_skip_verify = {{ acr_monitoring_alloy_remote_write_insecure_skip_verify | lower }}
+    }
+{% endif %}
+  }
+  external_labels = {
+    poligon  = "{{ acr_monitoring_alloy_poligon_label }}",
+    instance = constants.hostname,
+  }
+}

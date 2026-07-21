@@ -1,0 +1,65 @@
+---
+acr_monitoring_base_dir: /opt/docker/monitoring
+acr_monitoring_timezone: "Europe/Moscow"
+acr_monitoring_domain: "monitoring.example.local"
+
+acr_monitoring_allow_insecure_defaults: false
+
+acr_monitoring_install_stack: true
+acr_monitoring_enable_caddy: true
+acr_monitoring_enable_alloy: true
+
+acr_monitoring_grafana_image: "grafana/grafana"
+acr_monitoring_grafana_version: "13.1.0"
+acr_monitoring_prometheus_image: "prom/prometheus"
+acr_monitoring_prometheus_version: "v3.13.0"
+acr_monitoring_loki_image: "grafana/loki"
+acr_monitoring_loki_version: "3.7.3"
+acr_monitoring_caddy_image: "caddy"
+acr_monitoring_caddy_version: "2.11.4-alpine"
+acr_monitoring_alloy_version: "1.17.1"
+acr_monitoring_alloy_arch: "amd64"
+
+acr_monitoring_grafana_admin_user: "admin"
+acr_monitoring_grafana_admin_password: "admin"
+
+acr_monitoring_prometheus_retention_time: "7d"
+acr_monitoring_prometheus_retention_size: "20GB"
+acr_monitoring_prometheus_enable_remote_write_receiver: true
+
+acr_monitoring_prometheus_uid: 65534
+acr_monitoring_prometheus_gid: 65534
+
+acr_monitoring_loki_retention_period: "168h"
+acr_monitoring_loki_uid: 10001
+acr_monitoring_loki_gid: 10001
+
+acr_monitoring_grafana_uid: 472
+acr_monitoring_grafana_gid: 472
+
+acr_monitoring_grafana_dashboards_repo_url: "https://raw.githubusercontent.com/myplixa/dashboards-lib/main"
+acr_monitoring_grafana_dashboards: []
+
+acr_monitoring_grafana_datasource_prometheus_uid: "cfghiuq3ev400b"
+acr_monitoring_grafana_datasource_prometheus_alt_uid: "ef4s443shfcw0a"
+acr_monitoring_grafana_datasource_loki_uid: "cfghiyx26fzlsb"
+
+acr_monitoring_caddy_local_certs: true
+
+acr_monitoring_alloy_run_as_root: false
+
+acr_monitoring_alloy_monitor_docker: true
+
+acr_monitoring_alloy_remote_write_url: ""
+acr_monitoring_alloy_remote_write_insecure_skip_verify: false
+acr_monitoring_alloy_poligon_label: "default"
+
+acr_monitoring_alloy_textfile_dir: /var/lib/alloy/textfile
+acr_monitoring_alloy_docker_images_cron_minute: "*/5"
+acr_monitoring_alloy_extra_log_paths:
+  - path: "/var/log/*.log"
+    job: "system"
+  - path: "/var/log/apt/*.log"
+    job: "apt"
+  - path: "/var/log/unattended-upgrades/*.log"
+    job: "unattended-upgrades"

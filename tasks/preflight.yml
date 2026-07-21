@@ -1,0 +1,47 @@
+---
+- name: Check whether the Docker CLI is available
+  ansible.builtin.command: docker --version
+  register: acr_monitoring_docker_cli_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail when Docker is not installed on the target host
+  ansible.builtin.fail:
+    msg: >-
+      Docker was not found on {{ inventory_hostname }} (command 'docker' is
+      not on PATH). This role only deploys the monitoring stack on top of
+      Docker -- it does not install Docker itself. Install Docker Engine and
+      the Docker Compose plugin on this host before re-running the playbook.
+  when: acr_monitoring_docker_cli_check.rc != 0
+
+- name: Check whether the Docker daemon is reachable
+  ansible.builtin.command: docker info
+  register: acr_monitoring_docker_daemon_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail when the Docker daemon is not reachable
+  ansible.builtin.fail:
+    msg: >-
+      Docker is installed on {{ inventory_hostname }} but 'docker info'
+      failed (rc={{ acr_monitoring_docker_daemon_check.rc }}):
+      {{ acr_monitoring_docker_daemon_check.stderr | default('no stderr captured', true) }}
+      Check that the docker service is running (systemctl status docker) and
+      that the connecting user can access /var/run/docker.sock.
+  when: acr_monitoring_docker_daemon_check.rc != 0
+
+- name: Check whether the Docker Compose plugin is available
+  ansible.builtin.command: docker compose version
+  register: acr_monitoring_docker_compose_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail when the Docker Compose plugin is missing
+  ansible.builtin.fail:
+    msg: >-
+      Docker is installed on {{ inventory_hostname }} but the 'docker
+      compose' plugin is not available:
+      {{ acr_monitoring_docker_compose_check.stderr | default('command not found', true) }}
+      Install the docker-compose-plugin package on this host before
+      re-running the playbook.
+  when: acr_monitoring_docker_compose_check.rc != 0

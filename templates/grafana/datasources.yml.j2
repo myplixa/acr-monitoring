@@ -1,0 +1,25 @@
+{{ ansible_managed | comment }}
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: "{{ acr_monitoring_grafana_datasource_prometheus_uid }}"
+    access: proxy
+    url: "http://prometheus:9090"
+    isDefault: true
+    editable: false
+
+  - name: Prometheus (alt)
+    type: prometheus
+    uid: "{{ acr_monitoring_grafana_datasource_prometheus_alt_uid }}"
+    access: proxy
+    url: "http://prometheus:9090"
+    editable: false
+
+  - name: Loki
+    type: loki
+    uid: "{{ acr_monitoring_grafana_datasource_loki_uid }}"
+    access: proxy
+    url: "http://loki:3100"
+    editable: false

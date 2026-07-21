@@ -1,0 +1,31 @@
+---
+- name: Create base stack directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ acr_monitoring_dirs }}"
+
+- name: Set ownership on Grafana data directory (matches container uid/gid)
+  ansible.builtin.file:
+    path: "{{ acr_monitoring_base_dir }}/grafana/data"
+    state: directory
+    owner: "{{ acr_monitoring_grafana_uid }}"
+    group: "{{ acr_monitoring_grafana_gid }}"
+    mode: "0750"
+
+- name: Set ownership on Prometheus data directory (matches container uid/gid)
+  ansible.builtin.file:
+    path: "{{ acr_monitoring_base_dir }}/prometheus/data"
+    state: directory
+    owner: "{{ acr_monitoring_prometheus_uid }}"
+    group: "{{ acr_monitoring_prometheus_gid }}"
+    mode: "0750"
+
+- name: Set ownership on Loki data directory (matches container uid/gid)
+  ansible.builtin.file:
+    path: "{{ acr_monitoring_base_dir }}/loki/data"
+    state: directory
+    owner: "{{ acr_monitoring_loki_uid }}"
+    group: "{{ acr_monitoring_loki_gid }}"
+    mode: "0750"

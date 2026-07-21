@@ -1,0 +1,39 @@
+---
+- name: Check the Prometheus readiness endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:9090/-/ready"
+    status_code: 200
+  register: acr_monitoring_prometheus_ready
+  until: acr_monitoring_prometheus_ready.status == 200
+  retries: 20
+  delay: 3
+
+- name: Check the Loki readiness endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:3100/ready"
+    status_code: 200
+  register: acr_monitoring_loki_ready
+  until: acr_monitoring_loki_ready.status == 200
+  retries: 20
+  delay: 3
+
+- name: Check the Grafana health endpoint (direct port)
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:3000/api/health"
+    status_code: 200
+  register: acr_monitoring_grafana_ready
+  until: acr_monitoring_grafana_ready.status == 200
+  retries: 20
+  delay: 3
+  when: not acr_monitoring_enable_caddy | bool
+
+- name: Check the Grafana health endpoint (via Caddy)
+  ansible.builtin.uri:
+    url: "https://{{ acr_monitoring_domain }}/api/health"
+    validate_certs: false
+    status_code: 200
+  register: acr_monitoring_grafana_ready_caddy
+  until: acr_monitoring_grafana_ready_caddy.status == 200
+  retries: 20
+  delay: 3
+  when: acr_monitoring_enable_caddy | bool

@@ -1,0 +1,86 @@
+---
+- name: Download the Grafana Alloy .deb package
+  ansible.builtin.get_url:
+    url: "{{ acr_monitoring_alloy_download_url }}"
+    dest: "/tmp/{{ acr_monitoring_alloy_deb_name }}"
+    mode: "0644"
+
+- name: Install the Grafana Alloy package
+  ansible.builtin.apt:
+    deb: "/tmp/{{ acr_monitoring_alloy_deb_name }}"
+    state: present
+
+- name: Add the alloy user to the docker group
+  ansible.builtin.user:
+    name: alloy
+    groups: docker
+    append: true
+  when: acr_monitoring_alloy_monitor_docker | bool
+  notify: Restart alloy
+
+- name: Create the alloy systemd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/alloy.service.d
+    state: directory
+    mode: "0755"
+  when: acr_monitoring_alloy_run_as_root | bool
+
+- name: Grant alloy root privileges via a systemd override (only if needed)
+  ansible.builtin.template:
+    src: alloy/override.conf.j2
+    dest: /etc/systemd/system/alloy.service.d/override.conf
+    mode: "0644"
+  when: acr_monitoring_alloy_run_as_root | bool
+  notify:
+    - Reload systemd
+    - Restart alloy
+
+- name: Remove the root override when not requested
+  ansible.builtin.file:
+    path: /etc/systemd/system/alloy.service.d/override.conf
+    state: absent
+  when: not acr_monitoring_alloy_run_as_root | bool
+  notify:
+    - Reload systemd
+    - Restart alloy
+
+- name: Create the textfile collector directory
+  ansible.builtin.file:
+    path: "{{ acr_monitoring_alloy_textfile_dir }}"
+    state: directory
+    mode: "0755"
+  when: acr_monitoring_alloy_monitor_docker | bool
+
+- name: Deploy the Docker images inventory collector script
+  ansible.builtin.copy:
+    src: scripts/docker_images_collector.sh
+    dest: /usr/local/bin/docker_images_collector.sh
+    mode: "0755"
+  when: acr_monitoring_alloy_monitor_docker | bool
+
+- name: Schedule the Docker images inventory collector
+  ansible.builtin.cron:
+    name: acr_monitoring docker images inventory
+    minute: "{{ acr_monitoring_alloy_docker_images_cron_minute }}"
+    user: root
+    job: /usr/local/bin/docker_images_collector.sh
+  when: acr_monitoring_alloy_monitor_docker | bool
+
+- name: Remove the Docker images inventory collector when disabled
+  ansible.builtin.cron:
+    name: acr_monitoring docker images inventory
+    state: absent
+  when: not acr_monitoring_alloy_monitor_docker | bool
+
+- name: Render the Alloy configuration
+  ansible.builtin.template:
+    src: alloy/config.alloy.j2
+    dest: /etc/alloy/config.alloy
+    mode: "0644"
+  notify: Restart alloy
+
+- name: Ensure the alloy service is enabled and running
+  ansible.builtin.systemd:
+    name: alloy
+    state: started
+    enabled: true

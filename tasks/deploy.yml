@@ -1,0 +1,6 @@
+---
+- name: Pull and start the monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ acr_monitoring_base_dir }}"
+    state: present
+    pull: "missing"

@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  role_name: acr_monitoring
+  namespace: myplixa
+  author: Maxim Nefedev
+  description: Deploys a Grafana + Prometheus + Loki monitoring stack in Docker, with Caddy reverse-proxy and Grafana Alloy as a host agent.
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+
+  galaxy_tags:
+    - monitoring
+    - grafana
+    - prometheus
+    - loki
+    - alloy
+    - docker
+
+dependencies: []

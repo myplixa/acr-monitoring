@@ -1,0 +1,32 @@
+---
+- name: Create Grafana provisioning directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ acr_monitoring_base_dir }}/grafana/provisioning/datasources"
+    - "{{ acr_monitoring_base_dir }}/grafana/provisioning/dashboards"
+    - "{{ acr_monitoring_base_dir }}/grafana/dashboards"
+
+- name: Render the Grafana datasources provisioning config
+  ansible.builtin.template:
+    src: grafana/datasources.yml.j2
+    dest: "{{ acr_monitoring_base_dir }}/grafana/provisioning/datasources/datasources.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Render the Grafana dashboards provider config
+  ansible.builtin.template:
+    src: grafana/dashboards.yml.j2
+    dest: "{{ acr_monitoring_base_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Download the configured Grafana dashboards
+  ansible.builtin.get_url:
+    url: "{{ acr_monitoring_grafana_dashboards_repo_url }}/{{ item }}"
+    dest: "{{ acr_monitoring_base_dir }}/grafana/dashboards/{{ item | basename }}"
+    mode: "0644"
+    force: true
+  loop: "{{ acr_monitoring_grafana_dashboards }}"

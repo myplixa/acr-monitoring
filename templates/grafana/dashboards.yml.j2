@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+apiVersion: 1
+
+providers:
+  - name: acr_monitoring
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

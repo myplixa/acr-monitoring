@@ -1,0 +1,19 @@
+---
+- name: Deploy the Grafana monitoring stack
+  hosts: monitoring
+  become: true
+
+  vars:
+    acr_monitoring_domain: "monitoring.example.local"
+    acr_monitoring_grafana_admin_password: "{{ vault_grafana_admin_password | default('admin') }}"
+    acr_monitoring_grafana_version: "13.1.0"
+    acr_monitoring_prometheus_version: "v3.13.0"
+    acr_monitoring_loki_version: "3.7.3"
+    acr_monitoring_alloy_version: "1.17.1"
+    acr_monitoring_alloy_run_as_root: true
+    acr_monitoring_grafana_dashboards_repo_url: "https://raw.githubusercontent.com/myplixa/dashboards-lib/main"
+    acr_monitoring_grafana_dashboards:
+      - vm-monitoring/dashboards/vm-monitoring.json
+
+  roles:
+    - role: acr_monitoring

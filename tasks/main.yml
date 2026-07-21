@@ -1,0 +1,59 @@
+---
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that: ansible_facts['os_family'] == "Debian"
+    fail_msg: "acr_monitoring currently supports Debian/Ubuntu hosts only."
+
+- name: Refuse to deploy with the placeholder domain
+  ansible.builtin.assert:
+    that: acr_monitoring_domain != "monitoring.example.local"
+    fail_msg: >-
+      acr_monitoring_domain is still set to the placeholder
+      "monitoring.example.local". Set it to your real domain, or set
+      acr_monitoring_allow_insecure_defaults: true to deploy with it anyway
+      (e.g. for a throwaway lab run).
+  when:
+    - acr_monitoring_install_stack | bool
+    - not acr_monitoring_allow_insecure_defaults | bool
+
+- name: Refuse to deploy with the default Grafana admin password
+  ansible.builtin.assert:
+    that: acr_monitoring_grafana_admin_password != "admin"
+    fail_msg: >-
+      acr_monitoring_grafana_admin_password is still set to the default
+      "admin". Override it (ideally via Ansible Vault), or set
+      acr_monitoring_allow_insecure_defaults: true to deploy with it anyway
+      (e.g. for a throwaway lab run).
+  when:
+    - acr_monitoring_install_stack | bool
+    - not acr_monitoring_allow_insecure_defaults | bool
+
+- name: Verify Docker is installed and usable
+  ansible.builtin.include_tasks: preflight.yml
+  when: acr_monitoring_install_stack | bool
+
+- name: Create stack directory layout
+  ansible.builtin.include_tasks: directories.yml
+  when: acr_monitoring_install_stack | bool
+
+- name: Render stack configuration files
+  ansible.builtin.include_tasks: configs.yml
+  when: acr_monitoring_install_stack | bool
+
+- name: Provision Grafana dashboards
+  ansible.builtin.include_tasks: dashboards.yml
+  when:
+    - acr_monitoring_install_stack | bool
+    - acr_monitoring_grafana_dashboards | length > 0
+
+- name: Deploy the docker compose stack
+  ansible.builtin.include_tasks: deploy.yml
+  when: acr_monitoring_install_stack | bool
+
+- name: Wait for the monitoring stack to become healthy
+  ansible.builtin.include_tasks: healthcheck.yml
+  when: acr_monitoring_install_stack | bool
+
+- name: Install and configure Grafana Alloy host agent
+  ansible.builtin.include_tasks: alloy.yml
+  when: acr_monitoring_enable_alloy | bool

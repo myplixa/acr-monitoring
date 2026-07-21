@@ -1,0 +1,15 @@
+---
+- name: Deploy the Grafana Alloy agent (remote host)
+  hosts: agents
+  become: true
+
+  vars:
+    acr_monitoring_install_stack: false
+    acr_monitoring_enable_alloy: true
+    acr_monitoring_alloy_remote_write_url: "https://monitoring.example.local"
+    acr_monitoring_alloy_run_as_root: true
+    acr_monitoring_alloy_monitor_docker: true
+    acr_monitoring_alloy_version: "1.17.1"
+
+  roles:
+    - role: acr_monitoring

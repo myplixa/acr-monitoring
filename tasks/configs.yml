@@ -1,0 +1,30 @@
+---
+- name: Render prometheus.yml
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ acr_monitoring_base_dir }}/prometheus/prometheus.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Render loki.yml
+  ansible.builtin.template:
+    src: loki.yml.j2
+    dest: "{{ acr_monitoring_base_dir }}/loki/loki.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Render Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: "{{ acr_monitoring_base_dir }}/Caddyfile"
+    mode: "0644"
+  when: acr_monitoring_enable_caddy | bool
+  notify: Restart monitoring stack
+
+- name: Render docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ acr_monitoring_base_dir }}/docker-compose.yml"
+    mode: "0600"
+  no_log: true
+  notify: Restart monitoring stack
