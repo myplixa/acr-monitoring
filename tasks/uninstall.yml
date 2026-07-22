@@ -1,0 +1,58 @@
+---
+- name: Stop the alloy service
+  ansible.builtin.systemd:
+    name: alloy
+    state: stopped
+    enabled: false
+  when: acr_monitoring_enable_alloy | bool
+  failed_when: false
+
+- name: Remove the Docker images inventory cron job
+  ansible.builtin.cron:
+    name: acr_monitoring docker images inventory
+    state: absent
+  when: acr_monitoring_enable_alloy | bool
+
+- name: Remove the Docker images inventory collector script
+  ansible.builtin.file:
+    path: /usr/local/bin/docker_images_collector.sh
+    state: absent
+  when: acr_monitoring_enable_alloy | bool
+
+- name: Remove the alloy systemd override
+  ansible.builtin.file:
+    path: /etc/systemd/system/alloy.service.d
+    state: absent
+  when: acr_monitoring_enable_alloy | bool
+
+- name: Remove the alloy configuration
+  ansible.builtin.file:
+    path: /etc/alloy
+    state: absent
+  when: acr_monitoring_enable_alloy | bool
+
+- name: Remove the alloy package
+  ansible.builtin.apt:
+    name: alloy
+    state: absent
+  when: acr_monitoring_enable_alloy | bool
+
+- name: Reload systemd after removing the alloy service
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: acr_monitoring_enable_alloy | bool
+
+- name: Stop and remove the docker compose stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ acr_monitoring_base_dir }}"
+    state: absent
+  when: acr_monitoring_install_stack | bool
+
+- name: Remove the stack and alloy data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ acr_monitoring_base_dir }}"
+    - /var/lib/alloy
+  when: acr_monitoring_uninstall_remove_data | bool

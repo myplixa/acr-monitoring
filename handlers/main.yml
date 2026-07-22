@@ -4,11 +4,8 @@
     project_src: "{{ acr_monitoring_base_dir }}"
     state: restarted
 
-- name: Reload systemd
-  ansible.builtin.systemd:
-    daemon_reload: true
-
 - name: Restart alloy
   ansible.builtin.systemd:
     name: alloy
+    daemon_reload: true
     state: restarted

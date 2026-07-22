@@ -60,8 +60,8 @@ ansible-playbook -i examples/inventory.ini examples/playbook.yml --ask-become-pa
 ## Variables you must set before running
 
 These have insecure or placeholder defaults. The role **refuses to run**
-(`ansible.builtin.assert` in `tasks/main.yml`) while they're left at their
-default, unless you explicitly opt out:
+(`ansible.builtin.assert` in [tasks/checks.yml](tasks/checks.yml)) while
+they're left at their default, unless you explicitly opt out:
 
 | Variable | Default | Why you need to set it |
 |---|---|---|
@@ -102,6 +102,7 @@ when to change it.
 | `acr_monitoring_install_stack` | `true` | Set `false` on a remote host that should only run the Alloy agent — see [Remote Alloy agent](#remote-alloy-agent-no-local-stack) below |
 | `acr_monitoring_enable_caddy` | `true` | Toggle the reverse proxy / TLS termination |
 | `acr_monitoring_enable_alloy` | `true` | Toggle installing Grafana Alloy as a host systemd service |
+| `acr_monitoring_uninstall_remove_data` | `false` | Only used by the `uninstall` tag — see [Uninstalling](#uninstalling) below |
 
 ### Images / versions
 
@@ -273,6 +274,22 @@ case).
   and the `alloy` systemd service are not namespaced, so the role can't
   deploy two independent stacks on the same machine.
 
+## Uninstalling
+
+`tasks/uninstall.yml` is tagged `never, uninstall`, so it's skipped by every
+normal run and only executes when explicitly requested:
+
+```bash
+ansible-playbook -i examples/inventory.ini examples/playbook.yml --tags uninstall
+```
+
+This stops and removes the Alloy service/package/cron job/collector script
+(if `acr_monitoring_enable_alloy` is `true`) and the docker compose stack
+(if `acr_monitoring_install_stack` is `true`). Data directories
+(`acr_monitoring_base_dir` and `/var/lib/alloy`) are left in place unless
+you also set `acr_monitoring_uninstall_remove_data: true` — that's
+destructive and removes all Grafana/Prometheus/Loki data.
+
 ## Structure
 
 ```
@@ -283,13 +300,15 @@ acr-monitoring/
 ├── vars/main.yml            # Internal/computed variables
 ├── tasks/
 │   ├── main.yml
+│   ├── checks.yml           # Pre-deploy assert checks
 │   ├── preflight.yml        # Verify Docker/Compose are present and usable
 │   ├── directories.yml      # Stack directory layout & ownership
 │   ├── configs.yml          # Render compose file + service configs
 │   ├── dashboards.yml       # Provision Grafana datasources + dashboards (optional)
 │   ├── deploy.yml           # docker compose up
 │   ├── healthcheck.yml      # Wait for Grafana/Prometheus/Loki to become ready
-│   └── alloy.yml            # Host-level Grafana Alloy agent
+│   ├── alloy.yml            # Host-level Grafana Alloy agent
+│   └── uninstall.yml        # Tear down the stack/agent (tags: never, uninstall)
 ├── handlers/main.yml
 ├── templates/
 │   ├── docker-compose.yml.j2

@@ -9,6 +9,8 @@ acr_monitoring_install_stack: true
 acr_monitoring_enable_caddy: true
 acr_monitoring_enable_alloy: true
 
+acr_monitoring_uninstall_remove_data: false
+
 acr_monitoring_grafana_image: "grafana/grafana"
 acr_monitoring_grafana_version: "13.1.0"
 acr_monitoring_prometheus_image: "prom/prometheus"
